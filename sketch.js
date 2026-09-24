@@ -1,3 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Noetic Phenotypes</title>
+</head>
+<body>
+<script>
+
+(function(){
+  class P5LiteElement {
+    constructor(elt){
+      this.elt = elt;
+    }
+    parent(parent){
+      const node = parent && parent.elt ? parent.elt : parent;
+      (node || document.body).appendChild(this.elt);
+      return this;
+    }
+    addClass(name){
+      if(name) this.elt.classList.add(...String(name).split(/\s+/).filter(Boolean));
+      return this;
+    }
+    style(prop, value){
+      if(value === undefined && prop && typeof prop === 'object'){
+        Object.assign(this.elt.style, prop);
+      } else if(prop != null){
+        this.elt.style[prop] = String(value);
+      }
+      return this;
+    }
+    html(value){
+      if(value === undefined) return this.elt.innerHTML;
+      this.elt.innerHTML = value;
+      return this;
+    }
+    position(x=0,y=0){
+      this.elt.style.position='absolute';
+      this.elt.style.left = `${x}px`;
+      this.elt.style.top = `${y}px`;
+      return this;
+    }
+    mousePressed(fn){
+      this.elt.addEventListener('click', fn);
+      return this;
+    }
+  }
+
+  function wrap(elt){ return new P5LiteElement(elt); }
+
+  function appendDefault(elt){
+    document.body.appendChild(elt);
+    return wrap(elt);
+  }
+
+  windowWidth = window.innerWidth;
+  windowHeight = window.innerHeight;
+  width = windowWidth;
+  height = windowHeight;
+
+  let density = 1;
+  let ctx = null;
+  let currentFill = [255,255,255,255];
+  let currentStroke = [0,0,0,255];
+  let strokeEnabled = true;
+  let strokeW = 1;
+
+  window.createCanvas = function(w,h){
+    width = w; height = h;
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.floor(w*density));
+    c.height = Math.max(1, Math.floor(h*density));
+    c.style.width = `${w}px`;
+    c.style.height = `${h}px`;
+    document.body.appendChild(c);
+    ctx = c.getContext('2d');
+    ctx.setTransform(density,0,0,density,0,0);
+    const obj = wrap(c);
+    obj.elt.getContext = () => ctx;
+    return obj;
+  };
+
+  window.resizeCanvas = function(w,h){
+    width = w; height = h;
+    const c = document.querySelector('canvas');
+    if(!c) return;
+    c.width = Math.max(1, Math.floor(w*density));
+    c.height = Math.max(1, Math.floor(h*density));
+    c.style.width = `${w}px`;
+    c.style.height = `${h}px`;
+    ctx = c.getContext('2d');
+    ctx.setTransform(density,0,0,density,0,0);
+  };
+
+  window.pixelDensity = function(v){
+    if(v != null) density = Number(v) || 1;
+    return density;
+  };
+
+  window.noLoop = function(){};
+
+  window.createDiv = function(html=''){
+    const e = document.createElement('div');
+    e.innerHTML = html;
+    return appendDefault(e);
+  };
+
+  window.createButton = function(html=''){
+    const e = document.createElement('button');
+    e.innerHTML = html;
+    e.type = 'button';
+    return appendDefault(e);
+  };
+
+  window.createImg = function(src, alt=''){
+    const e = document.createElement('img');
+    e.src = src;
+    e.alt = alt;
+    return appendDefault(e);
+  };
+
+  window.background = function(r,g,b){
+    if(!ctx) return;
+    if(typeof r === 'string'){
+      ctx.fillStyle = r;
+    } else {
+      ctx.fillStyle = `rgb(${r||0},${g||0},${b||0})`;
+    }
+    ctx.fillRect(0,0,width,height);
+  };
+
+  window.noStroke = function(){ strokeEnabled=false; };
+  window.stroke = function(r,g,b,a=255){
+    strokeEnabled=true;
+    if(arguments.length===1){
+      currentStroke=[r,r,r,255];
+    } else if(arguments.length===2){
+      currentStroke=[r,r,r,g];
+    } else {
+      currentStroke=[r,g,b,a];
+    }
+    if(ctx) ctx.strokeStyle=`rgba(${currentStroke[0]},${currentStroke[1]},${currentStroke[2]},${currentStroke[3]/255})`;
+  };
+  window.strokeWeight = function(v){
+    strokeW = Number(v)||1;
+    if(ctx) ctx.lineWidth = strokeW;
+  };
+  window.fill = function(r,g,b,a=255){
+    if(arguments.length===1 && typeof r==='string'){
+      currentFill=[r];
+      if(ctx) ctx.fillStyle=r;
+      return;
+    }
+    if(arguments.length===1){ currentFill=[r,r,r,255]; }
+    else if(arguments.length===2){ currentFill=[r,r,r,g]; }
+    else { currentFill=[r,g,b,a]; }
+    if(ctx) ctx.fillStyle=`rgba(${currentFill[0]},${currentFill[1]},${currentFill[2]},${currentFill[3]/255})`;
+  };
+  window.ellipse = function(cx,cy,w,h){
+    if(!ctx) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(cx,cy,w/2,h/2,0,0,Math.PI*2);
+    if(currentFill.length===1) ctx.fillStyle=currentFill[0];
+    else ctx.fillStyle=`rgba(${currentFill[0]},${currentFill[1]},${currentFill[2]},${currentFill[3]/255})`;
+    ctx.fill();
+    if(strokeEnabled){
+      ctx.lineWidth=strokeW;
+      ctx.strokeStyle=`rgba(${currentStroke[0]},${currentStroke[1]},${currentStroke[2]},${currentStroke[3]/255})`;
+      ctx.stroke();
+    }
+    ctx.restore();
+  };
+  window.line = function(x1,y1,x2,y2){
+    if(!ctx) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+    ctx.lineWidth=strokeW;
+    ctx.strokeStyle=`rgba(${currentStroke[0]},${currentStroke[1]},${currentStroke[2]},${currentStroke[3]/255})`;
+    ctx.stroke();
+    ctx.restore();
+  };
+  window.lerp = function(a,b,t){ return a + (b-a)*t; };
+
+  window.addEventListener('resize', function(){
+    windowWidth = window.innerWidth;
+    windowHeight = window.innerHeight;
+    if(typeof windowResized === 'function') windowResized();
+  });
+
+  window.addEventListener('DOMContentLoaded', function(){
+    if(typeof preload === 'function') preload();
+    if(typeof setup === 'function') setup();
+  });
+})();
+
 let questions=[];
 let responses=[];
 let current=0;
@@ -3624,3 +3822,6 @@ function positionElements(){
     );
   }
 }
+</script>
+</body>
+</html>

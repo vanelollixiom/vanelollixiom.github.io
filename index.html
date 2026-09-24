@@ -1,14 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
+<head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My p5.js Sketch</title>
-    <!-- This loads the official p5.js library from the internet -->
-    <script src="https://cloudflare.com"></script>
-    <!-- This links your script file -->
+    <title>Native HTML Canvas</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #222; /* Dark background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            background-color: #fff; /* White drawing canvas */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- This is your drawing board -->
+    <canvas id="myCanvas" width="400" height="400"></canvas>
+
+    <!-- Connect your javascript file -->
     <script src="sketch.js"></script>
-  </head>
-  <body>
-  </body>
+</body>
 </html>
